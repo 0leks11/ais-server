@@ -34,7 +34,7 @@ const wss = new WebSocket.Server({ server });
 
 function broadcastToClients(message) {
   if (wss.clients.size === 0) {
-    console.log("⚠️ No WebSocket clients connected, skipping broadcast");
+    console.log("No WebSocket clients connected, skipping broadcast");
     return;
   }
 
@@ -44,7 +44,7 @@ function broadcastToClients(message) {
     }
   });
 
-  console.log("📡 Broadcasted message to all WebSocket clients");
+  console.log("Broadcasted message to all WebSocket clients");
 }
 
 let aisSocket;
@@ -53,7 +53,7 @@ function connectAisStream() {
   aisSocket = new WebSocket("wss://stream.aisstream.io/v0/stream");
 
   aisSocket.on("open", () => {
-    console.log("✅ Connected to aisstream.io");
+    console.log("Connected to aisstream.io");
     const subscriptionMessage = {
       APIKey: API_KEY,
       BoundingBoxes: [
@@ -66,12 +66,12 @@ function connectAisStream() {
       FilterMessageTypes: ["PositionReport"],
     };
     aisSocket.send(JSON.stringify(subscriptionMessage));
-    console.log("📡 Sent subscription message to aisstream.io");
+    console.log("Sent subscription message to aisstream.io");
   });
 
   aisSocket.on("message", async (data) => {
     const message = data.toString("utf8");
-
+    console.log("Отправляемое сообщение клиенту:", message);
     try {
       const parsed = JSON.parse(message);
       const receivedMMSI = parsed.MetaData?.MMSI?.toString();
@@ -96,7 +96,7 @@ function connectAisStream() {
 
   aisSocket.on("close", (code, reason) => {
     console.log(
-      `⚠️ Connection to aisstream.io closed (code: ${code}, reason: ${reason}). Reconnecting in 3 seconds...`
+      `Connection to aisstream.io closed (code: ${code}, reason: ${reason}). Reconnecting in 3 seconds...`
     );
     setTimeout(connectAisStream, 3000);
   });
@@ -113,7 +113,7 @@ wss.on("connection", (ws) => {
   }
   console.log("A WebSocket client connected");
 
-  ws.on("close", () => console.log("⚠️ A WebSocket client disconnected"));
+  ws.on("close", () => console.log("A WebSocket client disconnected"));
   ws.on("error", (error) => console.error("WebSocket client error:", error));
 });
 
