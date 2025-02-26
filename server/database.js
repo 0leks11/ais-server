@@ -1,19 +1,19 @@
 const { Sequelize, DataTypes } = require("sequelize");
 
-// Подключаемся к живому PostgreSQL
-const sequelize = new Sequelize(
-  "postgresql://oleksii:a7G0WD4ed5LxM8OAkKfSDMgwe1i6jukp@dpg-ouvht6btq21c73btc52g-a.frankfurt-postgres.render.com:5432/ais_5pq6",
-  {
-    dialect: "postgres",
-    dialectOptions: {
-      ssl: {
-        require: true,
-        rejectUnauthorized: false,
-      },
-    },
-    logging: false,
-  }
-);
+// Используем DATABASE_URL из переменных окружения (безопаснее)
+const sequelize = new Sequelize(process.env.DATABASE_URL, {
+  dialect: "postgres",
+  dialectOptions: {
+    ssl:
+      process.env.DATABASE_SSL === "true"
+        ? {
+            require: true,
+            rejectUnauthorized: false, // Render требует false
+          }
+        : false,
+  },
+  logging: false,
+});
 
 const Vessel = sequelize.define(
   "Vessel",
@@ -29,12 +29,18 @@ const Vessel = sequelize.define(
     },
   },
   {
-    timestamps: false, 
+    timestamps: false, // Отключаем createdAt и updatedAt
   }
 );
 
 async function initDB() {
-  await sequelize.sync();
+  try {
+    await sequelize.authenticate();
+    console.log("Connection to PostgreSQL established successfully.");
+    await sequelize.sync();
+  } catch (error) {
+    console.error("Database connection error:", error);
+  }
 }
 
 module.exports = { sequelize, Vessel, initDB };

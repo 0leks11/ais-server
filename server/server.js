@@ -27,8 +27,8 @@ app.use(cors());
 const server = http.createServer(app);
 
 initDB()
-  .then(() => console.log("✅ Database initialized"))
-  .catch((err) => console.error("❌ Database initialization failed:", err));
+  .then(() => console.log("Database initialized"))
+  .catch((err) => console.error("Database initialization failed:", err));
 
 const wss = new WebSocket.Server({ server });
 
@@ -87,10 +87,10 @@ function connectAisStream() {
           { mmsi: receivedMMSI, rawData: JSON.stringify(parsed) },
           { returning: true }
         );
-        console.log(`✅ Data for MMSI ${receivedMMSI} saved to DB`);
+        console.log(`Data for MMSI ${receivedMMSI} saved to DB`);
       }
     } catch (err) {
-      console.error("❌ Error processing aisstream.io message:", err);
+      console.error("Error processing aisstream.io message:", err);
     }
   });
 
@@ -102,7 +102,7 @@ function connectAisStream() {
   });
 
   aisSocket.on("error", (error) => {
-    console.error("❌ aisstream.io error:", error);
+    console.error("aisstream.io error:", error);
     aisSocket.close();
   });
 }
@@ -111,10 +111,10 @@ wss.on("connection", (ws) => {
   if (!aisSocket) {
     connectAisStream();
   }
-  console.log("✅ A WebSocket client connected");
+  console.log("A WebSocket client connected");
 
   ws.on("close", () => console.log("⚠️ A WebSocket client disconnected"));
-  ws.on("error", (error) => console.error("❌ WebSocket client error:", error));
+  ws.on("error", (error) => console.error("WebSocket client error:", error));
 });
 
 app.get("/api/vessels/:mmsi", async (req, res) => {
@@ -130,12 +130,12 @@ app.get("/api/vessels/:mmsi", async (req, res) => {
       return res.status(404).json({ error: "No data found for this MMSI" });
     }
   } catch (error) {
-    console.error("❌ Error fetching vessel data:", error);
+    console.error("Error fetching vessel data:", error);
     return res.status(500).json({ error: "Internal server error" });
   }
 });
 
 const PORT = process.env.PORT || 8080;
 server.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
