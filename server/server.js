@@ -1,4 +1,3 @@
-// server/server.js
 require("dotenv").config();
 const express = require("express");
 const WebSocket = require("ws");
@@ -27,15 +26,15 @@ const app = express();
 app.use(cors());
 const server = http.createServer(app);
 
-initDB().then(() => {
-  console.log("Database initialized");
-});
+initDB()
+  .then(() => console.log("✅ Database initialized"))
+  .catch((err) => console.error("❌ Database initialization failed:", err));
 
 const wss = new WebSocket.Server({ server });
 
 function broadcastToClients(message) {
   if (wss.clients.size === 0) {
-    console.log("No WebSocket clients connected, skipping broadcast");
+    console.log("⚠️ No WebSocket clients connected, skipping broadcast");
     return;
   }
 
@@ -45,7 +44,7 @@ function broadcastToClients(message) {
     }
   });
 
-  console.log("Broadcasted message to all connected WebSocket clients");
+  console.log("📡 Broadcasted message to all WebSocket clients");
 }
 
 let aisSocket;
@@ -54,7 +53,7 @@ function connectAisStream() {
   aisSocket = new WebSocket("wss://stream.aisstream.io/v0/stream");
 
   aisSocket.on("open", () => {
-    console.log("Connected to aisstream.io");
+    console.log("✅ Connected to aisstream.io");
     const subscriptionMessage = {
       APIKey: API_KEY,
       BoundingBoxes: [
@@ -67,15 +66,12 @@ function connectAisStream() {
       FilterMessageTypes: ["PositionReport"],
     };
     aisSocket.send(JSON.stringify(subscriptionMessage));
-    console.log(
-      "Sent subscription message to aisstream.io:",
-      subscriptionMessage
-    );
+    console.log("📡 Sent subscription message to aisstream.io");
   });
 
   aisSocket.on("message", async (data) => {
     const message = data.toString("utf8");
-    console.log("Отправляемое сообщение клиенту:", message);
+
     try {
       const parsed = JSON.parse(message);
       const receivedMMSI = parsed.MetaData?.MMSI?.toString();
@@ -87,23 +83,26 @@ function connectAisStream() {
         receivedMMSI &&
         MMSI_LIST.includes(receivedMMSI)
       ) {
-        await Vessel.upsert({ mmsi: receivedMMSI, rawData: message });
-        console.log(`Data for MMSI ${receivedMMSI} saved to DB`);
+        await Vessel.upsert(
+          { mmsi: receivedMMSI, rawData: JSON.stringify(parsed) },
+          { returning: true }
+        );
+        console.log(`✅ Data for MMSI ${receivedMMSI} saved to DB`);
       }
     } catch (err) {
-      console.error("Error parsing aisstream.io message:", err);
+      console.error("❌ Error processing aisstream.io message:", err);
     }
   });
 
-  aisSocket.on("close", () => {
+  aisSocket.on("close", (code, reason) => {
     console.log(
-      "Connection to aisstream.io closed. Reconnecting in 3 seconds..."
+      `⚠️ Connection to aisstream.io closed (code: ${code}, reason: ${reason}). Reconnecting in 3 seconds...`
     );
     setTimeout(connectAisStream, 3000);
   });
 
   aisSocket.on("error", (error) => {
-    console.error("aisstream.io error:", error);
+    console.error("❌ aisstream.io error:", error);
     aisSocket.close();
   });
 }
@@ -112,32 +111,31 @@ wss.on("connection", (ws) => {
   if (!aisSocket) {
     connectAisStream();
   }
-  console.log("A WebSocket client connected");
-  ws.on("close", () => {
-    console.log("A WebSocket client disconnected");
-  });
-  ws.on("error", (error) => {
-    console.error("WebSocket client error:", error);
-  });
+  console.log("✅ A WebSocket client connected");
+
+  ws.on("close", () => console.log("⚠️ A WebSocket client disconnected"));
+  ws.on("error", (error) => console.error("❌ WebSocket client error:", error));
 });
 
 app.get("/api/vessels/:mmsi", async (req, res) => {
   const { mmsi } = req.params;
-  const vessel = await Vessel.findOne({ where: { mmsi } });
-  if (vessel && vessel.rawData) {
-    try {
+
+  try {
+    const vessel = await Vessel.findOne({ where: { mmsi } });
+
+    if (vessel && vessel.rawData) {
       const parsedData = JSON.parse(vessel.rawData);
-      res.json(parsedData);
-    } catch (e) {
-      console.error("Stored data invalid JSON:", e);
-      res.status(500).json({ error: "Stored data is invalid JSON" });
+      return res.json(parsedData);
+    } else {
+      return res.status(404).json({ error: "No data found for this MMSI" });
     }
-  } else {
-    res.status(404).json({ error: "No data found for this MMSI" });
+  } catch (error) {
+    console.error("❌ Error fetching vessel data:", error);
+    return res.status(500).json({ error: "Internal server error" });
   }
 });
 
 const PORT = process.env.PORT || 8080;
 server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });
