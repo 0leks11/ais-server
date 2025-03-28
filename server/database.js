@@ -1,6 +1,6 @@
 const { Sequelize, DataTypes } = require("sequelize");
 
-// Используем DATABASE_URL из переменных окружения (безопаснее)
+
 const sequelize = new Sequelize(process.env.DATABASE_URL, {
   dialect: "postgres",
   dialectOptions: {
@@ -8,7 +8,7 @@ const sequelize = new Sequelize(process.env.DATABASE_URL, {
       process.env.DATABASE_SSL === "true"
         ? {
             require: true,
-            rejectUnauthorized: false, // Render требует false
+            rejectUnauthorized: false, 
           }
         : false,
   },
@@ -29,7 +29,7 @@ const Vessel = sequelize.define(
     },
   },
   {
-    timestamps: false, // Отключаем createdAt и updatedAt
+    timestamps: false, 
   }
 );
 
