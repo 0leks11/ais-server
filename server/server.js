@@ -26,6 +26,11 @@ const app = express();
 app.use(cors());
 const server = http.createServer(app);
 
+const PORT = process.env.PORT || 8080;
+server.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
+
 initDB()
   .then(() => console.log("Database initialized"))
   .catch((err) => console.error("Database initialization failed:", err));
